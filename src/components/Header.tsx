@@ -5,15 +5,19 @@ import { Navigation } from './Navigation';
 interface HeaderProps {
   cartItemCount: number;
   onCartClick: () => void;
+  onUserClick: () => void; // ✅ new
   currentPage: string;
   onPageChange: (page: string) => void;
 }
+
+
 
 export const Header: React.FC<HeaderProps> = ({
   cartItemCount,
   onCartClick,
   currentPage,
-  onPageChange
+  onPageChange,
+  onUserClick
 }) => {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -33,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* User Actions */}
           <div className="flex items-center space-x-4">
-            <button className="p-2 text-gray-600 hover:text-gray-900">
+            <button onClick={onUserClick} className="p-2 text-gray-600 hover:text-gray-900">
               <User className="h-5 w-5" />
             </button>
 
