@@ -10,6 +10,12 @@ export interface Product {
   description: string;
   countryCode: string;
   weight: number;
+  dimensions: {
+    length: number; // in cm
+    width: number;  // in cm
+    height: number; // in cm
+  };
+  fromPostalCode: string;
 }
 
 export interface CartItem {

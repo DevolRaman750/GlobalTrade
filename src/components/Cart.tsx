@@ -44,21 +44,34 @@ export const Cart: React.FC<CartProps> = ({
 
 
   const getLiveShippingRate = async (item: CartItem) => {
-    const fromCountry = item.product.countryCode;
-    const toCountry = 'US'; // or detect user's country dynamically
-    const weightKg = item.product.weight || 1; // fallback weight
+    const {
+      countryCode: fromCountry,
+      fromPostalCode,
+      weight,
+      dimensions,
+    } = item.product;
+
+    const toCountry = 'US';
+    const toPostalCode = '94105'; // Default or user-defined
 
     try {
       const res = await fetch('/api/getShippingRates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fromCountry, toCountry, weightKg }),
+        body: JSON.stringify({
+          fromCountry,
+          fromPostalCode,
+          toCountry,
+          toPostalCode,
+          weightKg: weight,
+          dimensions
+        }),
       });
 
       const data = await res.json();
 
-      // Get the lowest rate
-      const estimatedRate = data && data.rate_response?.rates?.[0]?.shipping_amount?.amount || 20;
+      const estimatedRate =
+          data?.rate_response?.rates?.[0]?.shipping_amount?.amount || 20;
 
       setLiveShippingRates(prev => ({
         ...prev,
@@ -70,6 +83,7 @@ export const Cart: React.FC<CartProps> = ({
   };
 
 
+
   useEffect(() => {
     cartItems.forEach(item => {
       if (!liveShippingRates[item.product.id]) {
@@ -78,8 +92,10 @@ export const Cart: React.FC<CartProps> = ({
     });
   }, [cartItems]);
 
+
   if (!isOpen) return null;
 
+  // console.log('ShipEngine response:', data);
 
 
 
