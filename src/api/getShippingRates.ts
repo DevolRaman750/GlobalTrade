@@ -47,6 +47,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
         const data = await response.json();
         res.status(200).json(data);
+
+        console.log("Incoming request body:", req.body);
     } catch (error) {
         console.error('Error fetching rates from ShipEngine:', error);
         res.status(500).json({ error: 'Failed to fetch rates from ShipEngine.' });
