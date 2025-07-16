@@ -41,19 +41,8 @@ function App() {
     simulateIPDetection();
   }, []);
 
-  const handleAddToCart = (product: Product) => {
-    setCartItems(prev => {
-      const existingItem = prev.find(item => item.product.id === product.id);
-      if (existingItem) {
-        return prev.map(item =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prev, { product, quantity: 1 }];
-    });
-  };
+
+
 
   const handleUserClick = () => {
     if (user) {
@@ -77,11 +66,62 @@ function App() {
     );
   };
 
+  const [liveShippingRates, setLiveShippingRates] = useState<Record<string, number>>({});
+
+
+  const getLiveShippingRate = async (product: Product) => {
+    try {
+      const res = await fetch('/api/getShippingRates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromCountry: product.countryCode,
+          toCountry: 'US',
+          fromPostalCode: product.fromPostalCode,
+          toPostalCode: '10001', // Example US destination postal code
+          weightKg: product.weight,
+          dimensions: product.dimensions,
+        }),
+      });
+
+      const data = await res.json();
+      const estimatedRate = data?.rate_response?.rates?.[0]?.shipping_amount?.amount || 20;
+
+      setLiveShippingRates(prev => ({
+        ...prev,
+        [product.id]: estimatedRate,
+      }));
+    } catch (error) {
+      console.error('Error fetching live shipping rate:', error);
+    }
+  };
+
+
   const handleRemoveItem = (productId: string) => {
     setCartItems(prev => prev.filter(item => item.product.id !== productId));
   };
+  const handleAddToCart = (product: Product) => {
+    setCartItems(prev => {
+      const existingItem = prev.find(item => item.product.id === product.id);
+      if (existingItem) {
+        return prev.map(item =>
+            item.product.id === product.id
+                ? { ...item, quantity: item.quantity + 1 }
+                : item
+        );
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+
+    // Fetch shipping rate immediately
+    if (!liveShippingRates[product.id]) {
+      getLiveShippingRate(product);
+    }
+  };
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+  // const [liveShippingRates, setLiveShippingRates] = useState<Record<string, number>>({});
+
 
   const renderCurrentPage = () => {
     switch (currentPage) {
@@ -147,6 +187,7 @@ function App() {
         cartItems={cartItems}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
+        liveShippingRates={liveShippingRates}
       />
     </div>
 

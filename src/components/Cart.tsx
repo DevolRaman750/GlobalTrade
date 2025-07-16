@@ -9,6 +9,7 @@ interface CartProps {
   cartItems: CartItem[];
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveItem: (productId: string) => void;
+  liveShippingRates: Record<string, number>;
 }
 
 export const Cart: React.FC<CartProps> = ({
