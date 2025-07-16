@@ -9,6 +9,7 @@ export interface Product {
   shippingMethod: 'Air' | 'Sea';
   description: string;
   countryCode: string;
+  weight: number;
 }
 
 export interface CartItem {

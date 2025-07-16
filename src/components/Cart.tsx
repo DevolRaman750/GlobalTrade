@@ -1,7 +1,7 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import { X, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { CartItem, PriceBreakdown } from '../types';
-import { shippingRates, tariffRates } from '../data/mockData';
+import { tariffRates } from '../data/mockData';
 
 interface CartProps {
   isOpen: boolean;
@@ -20,9 +20,9 @@ export const Cart: React.FC<CartProps> = ({
 }) => {
   const calculatePriceBreakdown = (item: CartItem): PriceBreakdown => {
     const basePrice = item.product.price * item.quantity;
-    const shipping = shippingRates[item.product.countryCode] || 20;
+    const shipping = liveShippingRates[item.product.id] || 20;
     const tariff = basePrice * (tariffRates[item.product.category] || 0.1);
-    
+
     return {
       basePrice,
       shipping,
@@ -31,6 +31,9 @@ export const Cart: React.FC<CartProps> = ({
     };
   };
 
+  const [liveShippingRates, setLiveShippingRates] = React.useState<Record<string, number>>({});
+
+
   const getTotalPrice = () => {
     return cartItems.reduce((total, item) => {
       const breakdown = calculatePriceBreakdown(item);
@@ -38,7 +41,47 @@ export const Cart: React.FC<CartProps> = ({
     }, 0);
   };
 
+
+
+  const getLiveShippingRate = async (item: CartItem) => {
+    const fromCountry = item.product.countryCode;
+    const toCountry = 'US'; // or detect user's country dynamically
+    const weightKg = item.product.weight || 1; // fallback weight
+
+    try {
+      const res = await fetch('/api/getShippingRates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromCountry, toCountry, weightKg }),
+      });
+
+      const data = await res.json();
+
+      // Get the lowest rate
+      const estimatedRate = data && data.rate_response?.rates?.[0]?.shipping_amount?.amount || 20;
+
+      setLiveShippingRates(prev => ({
+        ...prev,
+        [item.product.id]: estimatedRate,
+      }));
+    } catch (error) {
+      console.error('Error fetching shipping rate:', error);
+    }
+  };
+
+
+  useEffect(() => {
+    cartItems.forEach(item => {
+      if (!liveShippingRates[item.product.id]) {
+        getLiveShippingRate(item);
+      }
+    });
+  }, [cartItems]);
+
   if (!isOpen) return null;
+
+
+
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -94,7 +137,11 @@ export const Cart: React.FC<CartProps> = ({
                           </div>
                           <div className="flex justify-between text-blue-700">
                             <span>🚚 Shipping from {item.product.country}:</span>
-                            <span className="font-medium">${breakdown.shipping.toFixed(2)}</span>
+                            <span className="font-medium">
+                               {liveShippingRates[item.product.id] !== undefined
+                                   ? `$${liveShippingRates[item.product.id].toFixed(2)}`
+                                   : 'Fetching...'}
+                            </span>
                           </div>
                           <div className="flex justify-between text-orange-700">
                             <span>📋 Tariff ({(tariffRates[item.product.category] * 100).toFixed(0)}% - {item.product.tariffCode}):</span>
